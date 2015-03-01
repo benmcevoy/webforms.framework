@@ -6,39 +6,21 @@ namespace PropertyAccessor
 {
     public class PropertyModel
     {
-        private readonly DelegateReference _getDelegateReference;
-        private readonly DelegateReference _setDelegateReference;
+        private readonly MethodInfo _getDelegateReference;
+        private readonly MethodInfo _setDelegateReference;
 
         public PropertyModel(PropertyDescriptor propertyDescriptor)
         {
-            this.PropertyDescriptor = propertyDescriptor;
-            this.Name = propertyDescriptor.Name;
-            this.PropertyType = propertyDescriptor.PropertyType;
-            this.PropertyInfo = propertyDescriptor.ComponentType.GetProperty(this.Name);
+            PropertyDescriptor = propertyDescriptor;
+            Name = propertyDescriptor.Name;
+            PropertyType = propertyDescriptor.PropertyType;
+            PropertyInfo = propertyDescriptor.ComponentType.GetProperty(Name);
 
-            var getPropertyInfo = propertyDescriptor.ComponentType.GetProperty(this.Name, BindingFlags.GetProperty);
-            var setPropertyInfo = propertyDescriptor.ComponentType.GetProperty(this.Name, BindingFlags.SetProperty);
+            if (PropertyInfo == null) return;
 
-            if (getPropertyInfo != null)
-            {
-                _getDelegateReference = new DelegateReference(this.PropertyInfo, this.PropertyInfo.GetGetMethod());
-            }
-
-            if (setPropertyInfo != null)
-            {
-                _setDelegateReference = new DelegateReference(this.PropertyInfo, this.PropertyInfo.GetSetMethod());
-            }
+            _getDelegateReference = PropertyInfo.GetGetMethod();
+            _setDelegateReference = PropertyInfo.GetSetMethod();
         }
-
-        public string Name { get; set; }
-
-        public Type PropertyType { get; set; }
-
-        public PropertyDescriptor PropertyDescriptor { get; set; }
-
-        public AttributeCollection Attributes { get; set; }
-
-        public PropertyInfo PropertyInfo { get; set; }
 
         public object GetValue(object target)
         {
@@ -47,14 +29,7 @@ namespace PropertyAccessor
                 return null;
             }
 
-            var d = _getDelegateReference.TryGetDelegate(target);
-
-            if (d != null)
-            {
-                return d.DynamicInvoke();
-            }
-
-            return null;
+            return _getDelegateReference.Invoke(target, null);
         }
 
         public void SetValue(object target, object value)
@@ -64,12 +39,15 @@ namespace PropertyAccessor
                 return;
             }
 
-            var d = _setDelegateReference.TryGetDelegate(target);
-
-            if (d != null)
-            {
-                d.DynamicInvoke();
-            }
+            _setDelegateReference.Invoke(target, new[] { value });
         }
+
+        public string Name { get; private set; }
+
+        public Type PropertyType { get; private set; }
+
+        public PropertyDescriptor PropertyDescriptor { get; private set; }
+
+        public PropertyInfo PropertyInfo { get; private set; }
     }
 }

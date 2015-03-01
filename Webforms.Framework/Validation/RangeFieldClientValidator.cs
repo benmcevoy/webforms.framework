@@ -14,16 +14,18 @@ namespace Webforms.Framework.Validation
 
         public override void AddValidatorAttributes()
         {
-            var rangeAttribute = _validationAttribute as RangeAttribute;
+            var rangeAttribute = ValidationAttribute as RangeAttribute;
 
-            Type type = rangeAttribute.OperandType;
+            if (rangeAttribute == null) throw new NullReferenceException("rangeAttribute");
+
+            var type = rangeAttribute.OperandType;
 
             RenderBaseCompareFieldAttributes(type);
 
             AddAttributesToRender("evaluationfunction", "RangeValidatorEvaluateIsValid");
 
-            var maximumValue = ConvertToString(rangeAttribute.Maximum, _parentValidator.PropertyDescriptor);
-            var minimumValue = ConvertToString(rangeAttribute.Minimum, _parentValidator.PropertyDescriptor);
+            var maximumValue = ConvertToString(rangeAttribute.Maximum, ParentValidator.PropertyDescriptor);
+            var minimumValue = ConvertToString(rangeAttribute.Minimum, ParentValidator.PropertyDescriptor);
 
             AddAttributesToRender("maximumvalue", maximumValue);
             AddAttributesToRender("minimumvalue", minimumValue);
@@ -31,53 +33,61 @@ namespace Webforms.Framework.Validation
 
         private void RenderBaseCompareFieldAttributes(Type type)
         {
-            if (type != typeof(string))
+            if (type == typeof (string)) return;
+
+            var namedType = GetTypeAsString(type);
+
+            AddAttributesToRender("type", GetTypeAsString(type));
+
+            var currentInfo = NumberFormatInfo.CurrentInfo;
+
+            switch (namedType)
             {
-                var namedType = GetTypeAsString(type);
-
-                AddAttributesToRender("type", GetTypeAsString(type));
-
-                NumberFormatInfo currentInfo = NumberFormatInfo.CurrentInfo;
-                switch (namedType)
+                case "Double":
                 {
-                    case "Double":
-                        {
-                            string numberDecimalSeparator = currentInfo.NumberDecimalSeparator;
-                            AddAttributesToRender("decimalchar", numberDecimalSeparator);
-                            break;
-                        }
-                    case "Currency":
-                        {
-                            string currencyDecimalSeparator = currentInfo.CurrencyDecimalSeparator;
-                            AddAttributesToRender("decimalchar", currencyDecimalSeparator);
-                            string currencyGroupSeparator = currentInfo.CurrencyGroupSeparator;
-                            if (currencyGroupSeparator[0] == '\x00a0')
-                            {
-                                currencyGroupSeparator = " ";
-                            }
-                            AddAttributesToRender("groupchar", currencyGroupSeparator);
-                            AddAttributesToRender("digits", currentInfo.CurrencyDecimalDigits.ToString(NumberFormatInfo.InvariantInfo));
-                            int currencyGroupSize = GetCurrencyGroupSize(currentInfo);
-                            if (currencyGroupSize > 0)
-                            {
-                                AddAttributesToRender("groupsize", currencyGroupSize.ToString(NumberFormatInfo.InvariantInfo));
-                                break;
-                            }
-                            break;
-                        }
-                    case "Date":
-                        {
-                            AddAttributesToRender("dateorder", GetDateElementOrder());
-                            AddAttributesToRender("cutoffyear", CutoffYear.ToString(NumberFormatInfo.InvariantInfo));
-                            int year = DateTime.Today.Year;
-                            AddAttributesToRender("century", (year - (year % 100)).ToString(NumberFormatInfo.InvariantInfo));
-                            break;
-                        }
+                    var numberDecimalSeparator = currentInfo.NumberDecimalSeparator;
+
+                    AddAttributesToRender("decimalchar", numberDecimalSeparator);
+                    break;
+                }
+                case "Currency":
+                {
+                    var currencyDecimalSeparator = currentInfo.CurrencyDecimalSeparator;
+                    var currencyGroupSeparator = currentInfo.CurrencyGroupSeparator;
+
+                    AddAttributesToRender("decimalchar", currencyDecimalSeparator);
+                    
+                    if (currencyGroupSeparator[0] == '\x00a0')
+                    {
+                        currencyGroupSeparator = " ";
+                    }
+
+                    AddAttributesToRender("groupchar", currencyGroupSeparator);
+                    AddAttributesToRender("digits", currentInfo.CurrencyDecimalDigits.ToString(NumberFormatInfo.InvariantInfo));
+
+                    var currencyGroupSize = GetCurrencyGroupSize(currentInfo);
+                    
+                    if (currencyGroupSize > 0)
+                    {
+                        AddAttributesToRender("groupsize", currencyGroupSize.ToString(NumberFormatInfo.InvariantInfo));
+                    }
+
+                    break;
+                }
+                case "Date":
+                {
+                    AddAttributesToRender("dateorder", GetDateElementOrder());
+                    AddAttributesToRender("cutoffyear", CutoffYear.ToString(NumberFormatInfo.InvariantInfo));
+                    
+                    var year = DateTime.Today.Year;
+                    
+                    AddAttributesToRender("century", (year - (year % 100)).ToString(NumberFormatInfo.InvariantInfo));
+                    break;
                 }
             }
         }
 
-        private string GetTypeAsString(Type type)
+        private static string GetTypeAsString(Type type)
         {
             if (type == typeof(Int16) || type == typeof(Int32) || type == typeof(Int64) || type == typeof(UInt16) || type == typeof(UInt32) || type == typeof(UInt64))
             {
@@ -97,31 +107,36 @@ namespace Webforms.Framework.Validation
             return "String";
         }
 
-        private string GetDateElementOrder()
+        private static string GetDateElementOrder()
         {
-            string shortDatePattern = DateTimeFormatInfo.CurrentInfo.ShortDatePattern;
+            var shortDatePattern = DateTimeFormatInfo.CurrentInfo.ShortDatePattern;
+
             if (shortDatePattern.IndexOf('y') < shortDatePattern.IndexOf('M'))
             {
                 return "ymd";
             }
+
             if (shortDatePattern.IndexOf('M') < shortDatePattern.IndexOf('d'))
             {
                 return "mdy";
             }
+
             return "dmy";
         }
 
-        private int GetCurrencyGroupSize(NumberFormatInfo info)
+        private static int GetCurrencyGroupSize(NumberFormatInfo info)
         {
-            int[] currencyGroupSizes = info.CurrencyGroupSizes;
+            var currencyGroupSizes = info.CurrencyGroupSizes;
+
             if ((currencyGroupSizes != null) && (currencyGroupSizes.Length == 1))
             {
                 return currencyGroupSizes[0];
             }
+
             return -1;
         }
 
-        private int CutoffYear
+        private static int CutoffYear
         {
             get
             {
@@ -129,12 +144,13 @@ namespace Webforms.Framework.Validation
             }
         }
 
-        private string ConvertToString(object value, PropertyDescriptor property)
+        private static string ConvertToString(object value, PropertyDescriptor property)
         {
             if (property.PropertyType == typeof(DateTime))
             {
                 return ((DateTime)value).ToShortDateString();
             }
+
             return Convert.ToString(value, CultureInfo.CurrentCulture);
         }
     }

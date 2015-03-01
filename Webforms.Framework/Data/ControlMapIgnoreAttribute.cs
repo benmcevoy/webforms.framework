@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Webforms.Framework.Data
+﻿namespace Webforms.Framework.Data
 {
     public class ControlMapIgnoreAttribute : ControlMapAttribute
     {

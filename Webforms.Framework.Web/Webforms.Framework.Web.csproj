@@ -21,6 +21,10 @@
     <UpgradeBackupLocation>
     </UpgradeBackupLocation>
     <OldToolsVersion>4.0</OldToolsVersion>
+    <IISExpressSSLPort />
+    <IISExpressAnonymousAuthentication />
+    <IISExpressWindowsAuthentication />
+    <IISExpressUseClassicPipelineMode />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -90,6 +94,10 @@
     <Compile Include="Validators\ProductValidator.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\PropertyAccessor\PropertyAccessor.csproj">
+      <Project>{806AC587-554E-45DB-89DD-DD2279572211}</Project>
+      <Name>PropertyAccessor</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Webforms.Framework\Webforms.Framework.csproj">
       <Project>{1C90B9BC-F39C-401B-B320-D8BF3596AB55}</Project>
       <Name>Webforms.Framework</Name>

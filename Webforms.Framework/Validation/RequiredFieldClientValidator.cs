@@ -1,5 +1,4 @@
-﻿using System;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace Webforms.Framework.Validation
 {
@@ -8,7 +7,6 @@ namespace Webforms.Framework.Validation
         public RequiredFieldClientValidator(DataAnnotationValidator parentValidator, ValidationAttribute validationAttribute, string errorMessage) 
             : base(parentValidator, validationAttribute, errorMessage)
         {
-
         }
 
         public override void AddValidatorAttributes()

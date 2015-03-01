@@ -1,21 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Web;
-using System.Web.UI;
 using System.Web.UI.WebControls;
 using Webforms.Framework.Web.Model;
-using Webforms.Framework.Web.ModelBinders;
 using System.Diagnostics;
 
 namespace Webforms.Framework.Web
 {
-    public partial class Default : BasePage
+    public partial class Default : BasePage<Product>
     {
-        public Default()
+        protected void Page_Init(object sender, EventArgs e)
         {
-            // uncomment to use the custom model binder
-            // RegisterModelBinder<Product>(new ProductModelBinder());
+            // set to override default binder
+            //SetModelBinder<Product>(new ProductControlModelBinder());
         }
 
         protected void Page_Load(object sender, EventArgs e)
@@ -40,7 +36,7 @@ namespace Webforms.Framework.Web
         {
             var sw = Stopwatch.StartNew();
 
-            var products = BindRepeater<Product>(ProductRepeater);
+            var products = BindRepeater(ProductRepeater);
 
             sw.Stop();
 
@@ -48,7 +44,7 @@ namespace Webforms.Framework.Web
 
             foreach (var product in products)
             {
-                var errors = Validate<Product>(product);
+                var errors = Validate(product);
 
                 AddValidationErrors(errors);
             }

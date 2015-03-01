@@ -8,24 +8,27 @@ namespace PropertyAccessor
     {
         public TypeModel(Type type)
         {
-            this.Type = type;
-            this.Name = type.Name;
-            this.PropertyDescriptions = TypeDescriptor.GetProperties(type);
+            Type = type;
+            Name = type.Name;
+            FullName = type.FullName;
+            PropertyDescriptions = TypeDescriptor.GetProperties(type);
 
-            this.Properties = new Dictionary<string, PropertyModel>(32);
+            Properties = new Dictionary<string, PropertyModel>(32);
 
-            foreach (PropertyDescriptor propertyDescriptor in this.PropertyDescriptions)
+            foreach (PropertyDescriptor propertyDescriptor in PropertyDescriptions)
             {
-                this.Properties[propertyDescriptor.Name] = new PropertyModel(propertyDescriptor);
+                Properties[propertyDescriptor.Name] = new PropertyModel(propertyDescriptor);
             }
         }
 
-        public string Name { get; set; }
+        public string Name { get; private set; }
 
-        public Type Type { get; set; }
+        public string FullName { get; private set; }
 
-        public PropertyDescriptorCollection PropertyDescriptions { get; set; }
+        public Type Type { get; private set; }
 
-        public Dictionary<string, PropertyModel> Properties { get; set; }
+        public PropertyDescriptorCollection PropertyDescriptions { get; private set; }
+
+        public Dictionary<string, PropertyModel> Properties { get; private set; }
     }
 }

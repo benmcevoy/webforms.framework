@@ -49,7 +49,7 @@
     <Compile Include="Data\ControlMapIgnoreAttribute.cs" />
     <Compile Include="Data\WebControlModelBinder.cs" />
     <Compile Include="Data\FormModelBinder.cs" />
-    <Compile Include="Data\IModelBinder.cs" />
+    <Compile Include="Data\IControlModelBinder.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Data\WebFormModelBinder.cs" />
     <Compile Include="Validation\ClientValidator.cs" />

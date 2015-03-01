@@ -3,14 +3,29 @@ using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Linq;
 using System.Text.RegularExpressions;
+using PropertyAccessor;
 
 namespace Webforms.Framework.Data
 {
     /// <summary>
     /// Bind POSTed form values to objects
     /// </summary>
-    public static class FormModelBinder
+    public sealed class FormControlModelBinder<T>
+        where T : new()
     {
+        private readonly PropertyAccessorManager _propertyAccessorManager;
+
+        public FormControlModelBinder()
+            : this(PropertyAccessorManager.Instance)
+        {
+
+        }
+
+        public FormControlModelBinder(PropertyAccessorManager propertyAccessorManager)
+        {
+            _propertyAccessorManager = propertyAccessorManager;
+        }
+
         /// <summary>
         /// Bind POSTed form values to objects
         /// </summary>
@@ -35,52 +50,47 @@ namespace Webforms.Framework.Data
         /// </remarks>
         /// <param name="form">A POSTed form, e.g. Request.Form</param>
         /// <param name="prefix">Class name prefix, e.g. Product</param>
-        public static IEnumerable<T> BindEnumerable<T>(string prefix, NameValueCollection form)
-           where T : new()
+        public IEnumerable<T> BindEnumerable(string prefix, NameValueCollection form)
         {
             var results = new List<T>();
-            var properties = new T().GetType().GetProperties();
-            int index = -1;
+            var properties = _propertyAccessorManager.CreateTypeModel(typeof(T)).Properties;
+            var index = -1;
             var indexRegex = new Regex(string.Format(@"^{0}\[(\d?)\].*$", prefix));
 
             Array.Sort(form.AllKeys);
 
             foreach (var key in form.AllKeys)
             {
+                if (!key.StartsWith(prefix)) continue;
+
                 // already matched?
                 if (key.StartsWith(string.Format("{0}[{1}]", prefix, index)))
                 {
                     continue;
                 }
 
-                if (key.StartsWith(prefix))
+                var item = new T();
+                var matches = indexRegex.Match(key);
+
+                if (!matches.Success || matches.Groups.Count != 2) continue;
+
+                if (!Int32.TryParse(matches.Groups[1].Captures[0].Value, out index)) continue;
+
+                foreach (var property in properties)
                 {
-                    var item = new T();
-                    var matches = indexRegex.Match(key);
+                    var propertyKey = string.Format("{0}[{1}].{2}", prefix, index, property.Key);
 
-                    if (matches.Success && matches.Groups.Count == 2)
+                    if (!form.AllKeys.Contains(propertyKey)) continue;
+
+                    object result;
+
+                    if (TryConvertToType(form[propertyKey], property.Value.PropertyType, out result))
                     {
-                        if (Int32.TryParse(matches.Groups[1].Captures[0].Value, out index))
-                        {
-                            foreach (var property in properties)
-                            {
-                                var propertyKey = string.Format("{0}[{1}].{2}", prefix, index, property.Name);
-
-                                object result;
-
-                                if (form.AllKeys.Contains(propertyKey))
-                                {
-                                    if (TryConvertToType(form[propertyKey], property.PropertyType, out result))
-                                    {
-                                        property.SetValue(item, result, null);
-                                    }
-                                }
-                            }
-
-                            results.Add(item);
-                        }
+                        property.Value.SetValue(item, result);
                     }
                 }
+
+                results.Add(item);
             }
 
             return results;
@@ -92,22 +102,22 @@ namespace Webforms.Framework.Data
         /// <param name="form">A POSTed form, e.g. Request.Form</param>
         /// <param name="prefix">Class name prefix, e.g. Product</param>
         /// <returns></returns>
-        public static T Bind<T>(string prefix, NameValueCollection form) where T : new()
+        public T Bind(string prefix, NameValueCollection form) 
         {
-            var properties = new T().GetType().GetProperties();
             var item = new T();
+            var properties = _propertyAccessorManager.CreateTypeModel(item.GetType()).Properties;
 
             foreach (var property in properties)
             {
-                var propertyKey = string.Format("{0}.{1}", prefix, property.Name);
+                var propertyKey = string.Format("{0}.{1}", prefix, property.Key);
+
+                if (!form.AllKeys.Contains(propertyKey)) continue;
+
                 object result;
 
-                if (form.AllKeys.Contains(propertyKey))
+                if (TryConvertToType(form[propertyKey], property.Value.PropertyType, out result))
                 {
-                    if (TryConvertToType(form[propertyKey], property.PropertyType, out result))
-                    {
-                        property.SetValue(item, result, null);
-                    }
+                    property.Value.SetValue(item, result);
                 }
             }
 
@@ -120,31 +130,7 @@ namespace Webforms.Framework.Data
 
             try
             {
-                switch (type.Name)
-                {
-                    case "String":
-                        return true;
-
-                    case "Int32":
-                        result = Convert.ToInt32(value);
-                        return true;
-
-                    case "Boolean":
-                        result = value == "on" ? true : false;
-                        return true;
-
-                    case "DateTime":
-                        result = string.IsNullOrEmpty(value) ? new DateTime() : Convert.ToDateTime(value);
-                        return true;
-
-                    case "Double":
-                        result = Convert.ToDouble(value);
-                        return true;
-
-                    case "Decimal":
-                        result = Convert.ToDecimal(value);
-                        return true;
-                }
+                result = Convert.ChangeType(value, type);
             }
             catch { }
 

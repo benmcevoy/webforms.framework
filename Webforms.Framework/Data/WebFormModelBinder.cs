@@ -1,17 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Web.UI;
 using System.Web.UI.WebControls;
+using PropertyAccessor;
 
 namespace Webforms.Framework.Data
 {
     /// <summary>
     /// Bind Web Form Controls to objects
     /// </summary>
-    public class WebFormModelBinder 
+    public class WebFormModelBinder<T> : IControlModelBinder<T> where T : new()
     {
-        private readonly Dictionary<Type, object> _modelBinders;
-        private readonly WebControlModelBinder _defaultModelBinder;
+        private IControlModelBinder<T> _defaultModelBinder;
 
         /// <summary>
         /// Bind Web Form Controls to objects
@@ -28,14 +27,28 @@ namespace Webforms.Framework.Data
         /// Names and IDs are case sensitive.
         /// </remarks>
         public WebFormModelBinder()
+            : this(PropertyAccessorManager.Instance)
         {
-            _modelBinders = new Dictionary<Type, object>();
-            _defaultModelBinder = new WebControlModelBinder();
+
         }
 
-        public virtual void RegisterModelBinder<T>(IModelBinder<T> modelBinder) where T : new()
+        /// <summary>
+        /// Bind Web Form Controls to objects
+        /// </summary>
+        /// <remarks>
+        /// This is intended to bind simple types, such as DTOs or ViewModels from values found in a collection of WebControls.
+        /// There is no support for complex types, object heirarchies or even Enumerables.
+        /// However if you are keen you can implement IModelBinder and write your own:)
+        /// 
+        /// The conventions:
+        /// 
+        /// Model must have a default constructor.
+        /// Control ID must equal the Model Property Name.
+        /// Names and IDs are case sensitive.
+        /// </remarks>
+        public WebFormModelBinder(PropertyAccessorManager propertyAccessorPropertyAccessorManager)
         {
-            _modelBinders[typeof(T)] = modelBinder;
+            _defaultModelBinder = new WebControlModelBinder<T>(propertyAccessorPropertyAccessorManager);
         }
 
         /// <summary>
@@ -58,16 +71,12 @@ namespace Webforms.Framework.Data
         /// Control ID must equal the Model Property Name.
         /// Names and IDs are case sensitive.
         /// </remarks>
-        public virtual IEnumerable<T> BindRepeater<T>(Repeater repeater) where T : new()
+        public virtual IEnumerable<T> BindRepeater(Repeater repeater) 
         {
-            var results = new List<T>();
-
             foreach (RepeaterItem item in repeater.Items)
             {
-                results.Add(Bind<T>(item));
+                yield return Bind(item);
             }
-
-            return results;
         }
 
         /// <summary>
@@ -76,14 +85,14 @@ namespace Webforms.Framework.Data
         /// <typeparam name="T"></typeparam>
         /// <param name="source">An ASP.NET WebControl with child controls, e.g. Form or Panel</param>
         /// <returns>an instance of T</returns>
-        public virtual T Bind<T>(Control source) where T : new()
+        public virtual T Bind(Control source) 
         {
-            if (_modelBinders.ContainsKey(typeof(T)))
-            {
-                return (T)((IModelBinder<T>)_modelBinders[typeof(T)]).Bind(source);
-            }
+            return _defaultModelBinder.Bind(source);
+        }
 
-            return (T)_defaultModelBinder.Bind<T>(source);
+        public void SetModelBinder(IControlModelBinder<T> modelBinder)
+        {
+            _defaultModelBinder = modelBinder;
         }
     }
 }

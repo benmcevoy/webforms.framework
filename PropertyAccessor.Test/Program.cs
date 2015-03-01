@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Reflection;
+using System.Web.UI.WebControls;
 
 namespace PropertyAccessor.Test
 {
@@ -7,7 +8,7 @@ namespace PropertyAccessor.Test
     {
         static void Main(string[] args)
         {
-            LoadAllTypes();
+           // LoadAllTypes();
 
             GetProperty();
 
@@ -67,6 +68,17 @@ namespace PropertyAccessor.Test
         {
             try
             {
+                var tb = new TextBox();
+
+                var model = PropertyAccessor.PropertyAccessorManager.Instance.CreateTypeModel(tb.GetType());
+
+                var anotherTb = new TextBox();
+
+                anotherTb.Text = "this is a test";
+
+                var result = (string)model.Properties["Text"].GetValue(anotherTb);
+
+                Assert(anotherTb.Text == result);
 
             }
             catch (Exception ex)
@@ -85,7 +97,7 @@ namespace PropertyAccessor.Test
 
                 foreach (Type type in types)
                 {
-                    PropertyAccessor.Manager.CreateTypeModel(type);
+                    PropertyAccessor.PropertyAccessorManager.Instance.CreateTypeModel(type);
 
                     Console.WriteLine(type.Name);
                 }
@@ -103,6 +115,11 @@ namespace PropertyAccessor.Test
             Console.WriteLine(message);
             Console.WriteLine(ex.ToString());
             Console.WriteLine("*************************************");
+        }
+
+        private static void Assert(bool condition)
+        {
+            if(!condition) throw new Exception();
         }
     }
 }

@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Webforms.Framework.Data
+﻿namespace Webforms.Framework.Validation
 {
 	public class ErrorInfo
 	{
@@ -8,9 +6,9 @@ namespace Webforms.Framework.Data
 
         public ErrorInfo(object instance, string propertyName, string errorMessage)
 		{
-            this.Instance = instance;
-			this.PropertyName = propertyName;
-            this.ErrorMessage = errorMessage;
+            Instance = instance;
+			PropertyName = propertyName;
+            ErrorMessage = errorMessage;
 		}
 
         public virtual string PropertyName { get; private set; }

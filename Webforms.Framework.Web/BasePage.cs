@@ -1,48 +1,51 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Web.UI;
 using System.Web.UI.WebControls;
 using Webforms.Framework.Data;
+using Webforms.Framework.Validation;
 
 namespace Webforms.Framework.Web
 {
-    public abstract class BasePage : Page
+    public abstract class BasePage<TViewModel> : Page
+        where TViewModel : new()
     {
-        private readonly WebFormModelBinder _webFormModelBinder;
+        private readonly WebFormModelBinder<TViewModel> _webFormModelBinder;
         private readonly ValidationRunner _validationRunner;
+        private readonly FormControlModelBinder<TViewModel> _formModelBinder;
 
-        public BasePage()
+        protected BasePage()
         {
-            _webFormModelBinder = new WebFormModelBinder();
+            _webFormModelBinder = new WebFormModelBinder<TViewModel>();
             _validationRunner = new ValidationRunner();
+            _formModelBinder = new FormControlModelBinder<TViewModel>();
         }
 
-        protected virtual void RegisterModelBinder<T>(IModelBinder<T> modelBinder) where T : new()
+        protected virtual void SetModelBinder<T>(IControlModelBinder<TViewModel> controlModelBinder) 
         {
-            _webFormModelBinder.RegisterModelBinder<T>(modelBinder);
+            _webFormModelBinder.SetModelBinder(controlModelBinder);
         }
 
-        protected virtual IEnumerable<T> BindRepeater<T>(Repeater source) where T : new()
+        protected virtual IEnumerable<TViewModel> BindRepeater(Repeater source) 
         {
-            return _webFormModelBinder.BindRepeater<T>(source);
+            return _webFormModelBinder.BindRepeater(source);
         }
 
-        protected virtual T Bind<T>(Control source) where T : new()
+        protected virtual TViewModel Bind(Control source) 
         {
-            return _webFormModelBinder.Bind<T>(source);
+            return _webFormModelBinder.Bind(source);
         }
 
-        protected virtual T BindForm<T>(string modelPrefix) where T : new()
+        protected virtual TViewModel BindForm(string modelPrefix) 
         {
-            return FormModelBinder.Bind<T>(modelPrefix, this.Request.Form);
+            return _formModelBinder.Bind(modelPrefix, this.Request.Form);
         }
 
-        protected virtual IEnumerable<T> BindFormEnumerable<T>(string modelPrefix) where T : new()
+        protected virtual IEnumerable<TViewModel> BindFormEnumerable(string modelPrefix) 
         {
-            return FormModelBinder.BindEnumerable<T>(modelPrefix, this.Request.Form);
+            return _formModelBinder.BindEnumerable(modelPrefix, this.Request.Form);
         }
 
-        protected virtual IEnumerable<ErrorInfo> Validate<T>(T model)
+        protected virtual IEnumerable<ErrorInfo> Validate(TViewModel model)
         {
             return _validationRunner.Validate(model);
         }

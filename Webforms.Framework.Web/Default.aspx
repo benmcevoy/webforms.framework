@@ -26,15 +26,15 @@
 
                         <div>
                         <label>Quantity</label>
-                        <asp:TextBox runat="server"  MaxLength="10" ID="QuantityTextBox" Text="<%# As<Product>(Container).Quantity %>" />
-                        <asp:DataAnnotationValidator ID="DataAnnotationValidator1" runat="server" Display="Dynamic" ControlToValidate="QuantityTextBox" Property="Quantity" Type="Webforms.Framework.Web.Model.Product, Webforms.Framework.Web" />
+                        <asp:TextBox runat="server"  MaxLength="10" ID="Quantity" Text="<%# As<Product>(Container).Quantity %>" />
+                        <asp:DataAnnotationValidator ID="DataAnnotationValidator1" runat="server" Display="Dynamic" ControlToValidate="Quantity" Property="Quantity" Type="Webforms.Framework.Web.Model.Product, Webforms.Framework.Web" />
                     </div>
 
                     <div>
-                        <label>Name</label>
-                        <asp:TextBox runat="server" MaxLength="10" ID="TextBox1" Text="<%# As<Product>(Container).Name %>" />
-                        <asp:RequiredFieldValidator ID="reqVal1" runat="server" ControlToValidate="TextBox1" ErrorMessage="requied"/>
-                        <asp:RangeValidator ID="RequiredFieldValidator1" runat="server" ControlToValidate="TextBox1" ErrorMessage="range error" MinimumValue="10" MaximumValue="20"/>
+                        <label>Price</label>
+                        <asp:TextBox runat="server" MaxLength="10" ID="Price" Text="<%# As<Product>(Container).Price %>" />
+                        <asp:RequiredFieldValidator ID="reqVal1" runat="server" ControlToValidate="Price" ErrorMessage="requied"/>
+                        <asp:RangeValidator ID="RequiredFieldValidator1" runat="server" ControlToValidate="Price" ErrorMessage="range error" MinimumValue="10" MaximumValue="20"/>
                     </div>
 
        <%--             <div>

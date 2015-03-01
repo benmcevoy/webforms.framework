@@ -23,9 +23,9 @@ namespace Webforms.Framework.Validation
         private List<ClientValidator> _clientValidators;
 
         public DataAnnotationValidator()
-            : base()
         {
-            this.ErrorMessage = "The field is invalid.";
+            ErrorMessage = "The field is invalid.";
+
             _validationAttributes = Enumerable.Empty<ValidationAttribute>();
             _clientValidators = new List<ClientValidator>();
         }
@@ -36,7 +36,7 @@ namespace Webforms.Framework.Validation
 
             SetValidationAttributes();
 
-            var value = GetControlValidationValue(ControlToValidate);
+            GetControlValidationValue(ControlToValidate);
 
             _clientValidators = new List<ClientValidator>();
 
@@ -45,7 +45,7 @@ namespace Webforms.Framework.Validation
                 _clientValidators.Add(ClientValidatorFactory.Create(this, attribute, attribute.FormatErrorMessage(_property.DisplayName)));
             }
 
-            base.RegisterValidatorCommonScript();
+            RegisterValidatorCommonScript();
         }
 
         protected override void RegisterValidatorDeclaration()
@@ -91,7 +91,7 @@ namespace Webforms.Framework.Validation
 
                 if (!attribute.IsValid(value))
                 {
-                    this.ErrorMessage = attribute.FormatErrorMessage(_property.DisplayName);
+                    ErrorMessage = attribute.FormatErrorMessage(_property.DisplayName);
                     return false;
                 }
             }

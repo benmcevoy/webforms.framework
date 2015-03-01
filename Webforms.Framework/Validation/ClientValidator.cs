@@ -8,10 +8,10 @@ namespace Webforms.Framework.Validation
     public abstract class ClientValidator
     {
         private readonly Label _content;
-        protected readonly DataAnnotationValidator _parentValidator;
-        protected readonly ValidationAttribute _validationAttribute;
+        private readonly DataAnnotationValidator _parentValidator;
+        private readonly ValidationAttribute _validationAttribute;
 
-        public ClientValidator(DataAnnotationValidator parentValidator, ValidationAttribute validationAttribute, string errorMessage)
+        protected ClientValidator(DataAnnotationValidator parentValidator, ValidationAttribute validationAttribute, string errorMessage)
         {
             _parentValidator = parentValidator;
             _validationAttribute = validationAttribute;
@@ -20,7 +20,7 @@ namespace Webforms.Framework.Validation
             {
                 ForeColor = parentValidator.ForeColor,
                 Text = string.Concat(errorMessage, " "),
-                ID = GetID()
+                ID = GetId()
             };
 
             AddParentAttributes(errorMessage);
@@ -30,26 +30,14 @@ namespace Webforms.Framework.Validation
 
         public abstract void AddValidatorAttributes();
 
-        private void RenderRegularExpressionAttributes()
-        {
-            AddAttributesToRender("evaluationfunction", "RegularExpressionValidatorEvaluateIsValid");
-
-            var regularExpressionAttribute = _validationAttribute as RegularExpressionAttribute;
-
-            if (!string.IsNullOrEmpty(regularExpressionAttribute.Pattern))
-            {
-                AddAttributesToRender("validationexpression", regularExpressionAttribute.Pattern);
-            }
-        }
-
         private void AddParentAttributes(string errorMessage)
         {
-            if (_parentValidator.ControlToValidate.Length > 0)
+            if (ParentValidator.ControlToValidate.Length > 0)
             {
-                AddAttributesToRender("controltovalidate", GetControlRenderID(_parentValidator.ControlToValidate));
+                AddAttributesToRender("controltovalidate", GetControlRenderId(ParentValidator.ControlToValidate));
             }
 
-            if (_parentValidator.SetFocusOnError)
+            if (ParentValidator.SetFocusOnError)
             {
                 AddAttributesToRender("focusOnError", "t");
             }
@@ -59,32 +47,32 @@ namespace Webforms.Framework.Validation
                 AddAttributesToRender("errormessage", errorMessage);
             }
 
-            ValidatorDisplay displayMode = _parentValidator.Display;
+            var displayMode = ParentValidator.Display;
 
             if (displayMode != ValidatorDisplay.Static)
             {
                 AddAttributesToRender("display", PropertyConverter.EnumToString(typeof(ValidatorDisplay), displayMode));
             }
 
-            if (!_parentValidator.IsValid)
+            if (!ParentValidator.IsValid)
             {
                 AddAttributesToRender("isvalid", "False");
             }
 
-            if (!_parentValidator.Enabled)
+            if (!ParentValidator.Enabled)
             {
                 AddAttributesToRender("enabled", "False");
             }
 
-            if (_parentValidator.ValidationGroup.Length > 0)
+            if (ParentValidator.ValidationGroup.Length > 0)
             {
-                AddAttributesToRender("validationGroup", _parentValidator.ValidationGroup);
+                AddAttributesToRender("validationGroup", ParentValidator.ValidationGroup);
             }
         }
 
-        private string GetControlRenderID(string name)
+        private string GetControlRenderId(string name)
         {
-            Control control = _parentValidator.FindControl(name);
+            var control = ParentValidator.FindControl(name);
 
             if (control == null)
             {
@@ -94,19 +82,19 @@ namespace Webforms.Framework.Validation
             return control.ClientID;
         }
 
-        private string GetID()
+        private string GetId()
         {
-            return string.Format("{0}_cv_{1}", _parentValidator.ID, Guid.NewGuid().ToString("D").Replace("-", ""));
+            return string.Format("{0}_cv_{1}", ParentValidator.ID, Guid.NewGuid().ToString("D").Replace("-", ""));
         }
 
         public virtual void Render(HtmlTextWriter writer)
         {
-            ValidatorDisplay displayMode = _parentValidator.Display;
+            var displayMode = ParentValidator.Display;
 
             switch (displayMode)
             {
                 case ValidatorDisplay.Dynamic:
-                    if (_parentValidator.IsValidationAttributeValid(_validationAttribute))
+                    if (ParentValidator.IsValidationAttributeValid(_validationAttribute))
                     {
                         _content.Style["display"] = "none";
                     }
@@ -117,12 +105,10 @@ namespace Webforms.Framework.Validation
                     break;
 
                 case ValidatorDisplay.Static:
-                    if (_parentValidator.IsValidationAttributeValid(_validationAttribute))
+                    if (ParentValidator.IsValidationAttributeValid(_validationAttribute))
                     {
                         _content.Style["visibility"] = "hidden";
                     }
-                    break;
-                default:
                     break;
             }
 
@@ -131,12 +117,17 @@ namespace Webforms.Framework.Validation
 
         protected void AddAttributesToRender(string attributeName, string attributeValue)
         {
-            _parentValidator.Page.ClientScript.RegisterExpandoAttribute(_content.ClientID, attributeName, attributeValue);
+            ParentValidator.Page.ClientScript.RegisterExpandoAttribute(_content.ClientID, attributeName, attributeValue);
         }
 
-        public virtual ValidationAttribute ValidationAttribute
+        protected virtual ValidationAttribute ValidationAttribute
         {
             get { return _validationAttribute; }
+        }
+
+        protected virtual DataAnnotationValidator ParentValidator
+        {
+            get { return _parentValidator; }
         }
 
         public virtual string ClientID

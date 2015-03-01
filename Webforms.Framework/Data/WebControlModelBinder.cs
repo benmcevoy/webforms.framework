@@ -6,11 +6,17 @@ using PropertyAccessor;
 
 namespace Webforms.Framework.Data
 {
-    public sealed class WebControlModelBinder
+    public sealed class WebControlModelBinder<T> : IControlModelBinder<T>
+        where T : new()
     {
-        private static readonly Dictionary<string, PropertyModel> _controlPropertyCache = new Dictionary<string, PropertyModel>(32);
-        private static readonly Dictionary<Type, ControlMapAttribute> _controlMapAttributeCache = new Dictionary<Type, ControlMapAttribute>(32);
-        private static readonly Dictionary<string, Type> _candidateProperties = new Dictionary<string, Type>(5)
+        private readonly PropertyAccessorManager _propertyCachePropertyAccessorManager;
+
+        // static fields in generic type means one instance per <T>
+        // ReSharper disable StaticFieldInGenericType
+        private static readonly Dictionary<string, PropertyModel> ControlPropertyCache = new Dictionary<string, PropertyModel>(32);
+        private static readonly Dictionary<Type, ControlMapAttribute> ControlMapAttributeCache = new Dictionary<Type, ControlMapAttribute>(32);
+        private static readonly Dictionary<string, Type> CandidateProperties = new Dictionary<string, Type>(5)
+        // ReSharper restore StaticFieldInGenericType
             {
                 { "SelectedValue", typeof(string) },
                 { "SelectedDate", typeof(DateTime) },
@@ -19,14 +25,17 @@ namespace Webforms.Framework.Data
                 { "Text", typeof(string) },
             };
 
-        public WebControlModelBinder() { }
+        public WebControlModelBinder(PropertyAccessorManager propertyCachePropertyAccessorManager)
+        {
+            _propertyCachePropertyAccessorManager = propertyCachePropertyAccessorManager;
+        }
 
-        public object Bind<T>(Control source) where T : new()
+        public T Bind(Control source)
         {
             var result = new T();
             var properties = GetProperties(typeof(T));
 
-            foreach (PropertyModel property in properties.Values)
+            foreach (var property in properties.Values)
             {
                 if (TrySetFromControlMap(source, result, property))
                 {
@@ -35,12 +44,11 @@ namespace Webforms.Framework.Data
 
                 foreach (Control control in source.Controls)
                 {
-                    if (control.ID == property.Name)
+                    if (control.ID != property.Name) continue;
+
+                    if (TryFindAndSetObjectProperty(control, result, property))
                     {
-                        if (TryFindAndSetObjectProperty(control, result, property))
-                        {
-                            break;
-                        }
+                        break;
                     }
                 }
             }
@@ -48,50 +56,39 @@ namespace Webforms.Framework.Data
             return result;
         }
 
-        private bool TrySetFromControlMap<T>(Control source, T result, PropertyModel property)
+        private bool TrySetFromControlMap(Control source, T result, PropertyModel property)
         {
             var controlMap = GetControlMapAttribute(typeof(T));
 
-            if (controlMap != null)
-            {
-                if (controlMap is ControlMapIgnoreAttribute)
-                {
-                    return true;
-                }
+            if (controlMap == null) return false;
+            if (controlMap is ControlMapIgnoreAttribute) return true;
 
-                if (controlMap is ControlMapAttribute)
-                {
-                    var map = controlMap as ControlMapAttribute;
-                    var mappedControl = source.FindControl(map.ControlName);
+            var map = controlMap;
+            var mappedControl = source.FindControl(map.ControlId);
 
-                    if (mappedControl != null)
-                    {
-                        var mappedProperty = GetProperties(mappedControl.GetType())[map.PropertyName];
+            if (mappedControl == null) return false;
 
-                        property.SetValue(result, Convert.ChangeType(mappedProperty.GetValue(mappedControl), property.PropertyType));
+            var mappedProperty = GetProperties(mappedControl.GetType())[map.PropertyName];
 
-                        return true;
-                    }
-                }
-            }
+            property.SetValue(result, Convert.ChangeType(mappedProperty.GetValue(mappedControl), property.PropertyType));
 
-            return false;
+            return true;
         }
 
-        private bool TryFindAndSetObjectProperty<D>(Control source, D destination, PropertyModel destinationProperty)
+        private bool TryFindAndSetObjectProperty<TDestination>(Control source, TDestination destination, PropertyModel destinationProperty)
         {
-            if (_controlPropertyCache.ContainsKey(source.ID))
+            if (ControlPropertyCache.ContainsKey(source.ID))
             {
                 destinationProperty.SetValue(destination,
-                    Convert.ChangeType(_controlPropertyCache[source.ID].GetValue(source), destinationProperty.PropertyType));
+                    Convert.ChangeType(ControlPropertyCache[source.ID].GetValue(source), destinationProperty.PropertyType));
                 return true;
             }
 
             var properties = GetProperties(source.GetType());
 
-            foreach (var candidate in _candidateProperties)
+            foreach (var candidate in CandidateProperties)
             {
-                if(!properties.ContainsKey(candidate.Key))
+                if (!properties.ContainsKey(candidate.Key))
                 {
                     continue;
                 }
@@ -105,7 +102,7 @@ namespace Webforms.Framework.Data
                         destinationProperty.SetValue(destination,
                             Convert.ChangeType(property.GetValue(source), destinationProperty.PropertyType));
 
-                        _controlPropertyCache[source.ID] = property;
+                        ControlPropertyCache[source.ID] = property;
 
                         return true;
                     }
@@ -121,17 +118,17 @@ namespace Webforms.Framework.Data
 
         private Dictionary<string, PropertyModel> GetProperties(Type type)
         {
-            return Manager.CreateTypeModel(type).Properties;
+            return _propertyCachePropertyAccessorManager.CreateTypeModel(type).Properties;
         }
 
-        private ControlMapAttribute GetControlMapAttribute(Type type)
+        private static ControlMapAttribute GetControlMapAttribute(Type type)
         {
-            if (!_controlMapAttributeCache.ContainsKey(type))
+            if (!ControlMapAttributeCache.ContainsKey(type))
             {
-                _controlMapAttributeCache[type] = TypeDescriptor.GetAttributes(type)[typeof(ControlMapAttribute)] as ControlMapAttribute;
+                ControlMapAttributeCache[type] = TypeDescriptor.GetAttributes(type)[typeof(ControlMapAttribute)] as ControlMapAttribute;
             }
 
-            return _controlMapAttributeCache[type];
+            return ControlMapAttributeCache[type];
         }
     }
 }
